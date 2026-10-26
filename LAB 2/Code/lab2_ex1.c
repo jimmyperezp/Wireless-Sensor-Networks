@@ -45,11 +45,6 @@ PROCESS_THREAD(sensors_setup, ev ,data)
 
 PROCESS_THREAD(coordinator,ev, data){
 
-
-
-    static char data_received[6] = "";
-    snprintf(data_received, sizeof(data_received), "%s", (char*)data);
-
     PROCESS_BEGIN();
 
     coordinator_event = process_alloc_event();
@@ -59,13 +54,13 @@ PROCESS_THREAD(coordinator,ev, data){
         PROCESS_WAIT_EVENT_UNTIL(ev==serial_line_event_message);
         printf("Message received: %s\n",(char*)data);
 
-        if(strcmp(data_received,"LR") == 0) process_post(&toggle_leds,coordinator_event,"RED");
+        if(strcmp(data,"LR") == 0) process_post(&toggle_leds,coordinator_event,"RED");
 
-        else if(strcmp(data_received,"LG") == 0) process_post(&toggle_leds,coordinator_event,"GREEN");
+        else if(strcmp(data,"LG") == 0) process_post(&toggle_leds,coordinator_event,"GREEN");
 
-        else if(strcmp(data_received,"SH") == 0)process_post(&read_sensors,coordinator_event,"H");
+        else if(strcmp(data,"SH") == 0)process_post(&read_sensors,coordinator_event,"H");
 
-        else if(strcmp(data_received,"ST") == 0) process_post(&read_sensors,coordinator_event,"T");
+        else if(strcmp(data,"ST") == 0) process_post(&read_sensors,coordinator_event,"T");
 
         else printf("Message received (%s) not identified.Valid messages: LR, LG, SH, ST\n",(char*)data);
 
@@ -76,9 +71,6 @@ PROCESS_THREAD(coordinator,ev, data){
 
 PROCESS_THREAD(toggle_leds,ev, data){
 
-    static char data_received[6] = "";
-    snprintf(data_received, sizeof(data_received), "%s", (char*)data);
-
     PROCESS_BEGIN();
 
     while(1){
@@ -86,8 +78,8 @@ PROCESS_THREAD(toggle_leds,ev, data){
         PROCESS_WAIT_EVENT_UNTIL(ev == coordinator_event);
         printf("%s LED toggled\n",(char*)data);
         printf("Waiting for next serial line reception\n");
-        if(strcmp(data_received,"RED")==0) leds_toggle(LEDS_RED);
-        else if(strcmp(data_received,"GREEN")==0) leds_toggle(LEDS_GREEN);
+        if(strcmp(data,"RED")==0) leds_toggle(LEDS_RED);
+        else if(strcmp(data,"GREEN")==0) leds_toggle(LEDS_GREEN);
 
     }
     PROCESS_END();
@@ -98,8 +90,6 @@ PROCESS_THREAD(read_sensors,ev, data){
     uint32_t hume = 0;
     int32_t temper = 0;
 
-    static char data_received[6] = "";
-    snprintf(data_received, sizeof(data_received), "%s", (char*)data);
 
     PROCESS_BEGIN();
 
@@ -109,9 +99,9 @@ PROCESS_THREAD(read_sensors,ev, data){
 
         SI7021_measure(&hume, &temper);
 
-        if((strcmp(data_received,"H"))==0) printf("Humidity: %d.%d %%\n", (int)(hume/1000), (int)(hume%1000));
+        if((strcmp(data,"H"))==0) printf("Humidity: %d.%d %%\n", (int)(hume/1000), (int)(hume%1000));
 
-        else if((strcmp(data_received,"T"))==0) printf("Temperature: %d.%d C\n", (int)(temper/1000), (int)(temper%1000));
+        else if((strcmp(data,"T"))==0) printf("Temperature: %d.%d C\n", (int)(temper/1000), (int)(temper%1000));
         printf("Waiting for next serial line reception\n");
 
     }

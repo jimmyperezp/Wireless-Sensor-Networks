@@ -110,7 +110,7 @@ PROCESS_THREAD(coordinator,ev, data){
         data_to_next_process.action = incoming_data[1];
         data_to_next_process.period = (int)user_period;
 
-        process_post_synch(next_proc,coordinator_event,&data_to_next_process);
+        process_post(next_proc,coordinator_event,&data_to_next_process);
 
     }
     PROCESS_END();
@@ -152,10 +152,12 @@ PROCESS_THREAD(toggle_leds,ev, data){
                 if(data==&red_timer){
                     leds_toggle(LEDS_RED);
                     etimer_reset(&red_timer);
+                    printf("(Timestamp: %d) Red LED toggled", (int)clock_time());
                 }
                 else if(data==&green_timer){
                     leds_toggle(LEDS_GREEN);
                     etimer_reset(&green_timer);
+                    printf("(Timestamp: %d) Green LED toggled", (int)clock_time());
                 }
             }
 
@@ -200,14 +202,15 @@ PROCESS_THREAD(read_sensors,ev, data){
         }
 
         else if(ev==PROCESS_EVENT_TIMER){
+            SI7021_measure(&hume, &temper);
 
             if(data==&temp_timer){
-                printf("\n%d Temperature: %d.%d C\n",(int)clock_time(), (int)(temper/1000), (int)(temper%1000));
+                printf("\n(Timestamp: %d) Temperature: %d.%d C\n",(int)clock_time(), (int)(temper/1000), (int)(temper%1000));
                 etimer_reset(&temp_timer);
             }
 
             else if(data==&humidity_timer){
-                printf("\n%dHumidity: %d.%d %%\n", (int)clock_time(),(int)(hume/1000), (int)(hume%1000));
+                printf("\n(Timestamp: %d) Humidity: %d.%d %%\n", (int)clock_time(),(int)(hume/1000), (int)(hume%1000));
 
                 etimer_reset(&humidity_timer);
             }
