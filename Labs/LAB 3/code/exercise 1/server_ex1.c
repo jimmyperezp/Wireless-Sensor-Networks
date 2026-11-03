@@ -1,7 +1,7 @@
 /*
- * LAB3 - Exercise 1: UDP Server code (RPL root)
- *  Created on: Oct 26, 2026
- *  Author: Adrián Riveiro & Jaime Pérez
+ *  LAB3 - Exercise 1: SERVER
+ *  Created on: Nov 3, 2026
+ *  Author: Jaime Pérez
  *
  *  Whenever a packet is received from a client, the server prints it and
  *  sends a reply packet back to that same client.
@@ -20,7 +20,7 @@
 #define UDP_CLIENT_PORT 8765
 #define UDP_SERVER_PORT 5678
 
-#define MY_MESSAGE "Soy el server" // Reply sent back to the clients
+#define MY_MESSAGE "I'M THE SERVER" // Reply sent back to the clients
 static struct simple_udp_connection udp_conn; //Identifies the socket that will be later used.
 
 
@@ -39,7 +39,7 @@ static void udp_rx_callback(struct simple_udp_connection *c,
 {
     printf("\nReceived packet from ");
     uiplib_ipaddr_print(source_addr);
-    printf(", Data: %.*s\n", (int)datalen, (char*)data); // Only datalen characters are printed
+    printf(", Data: %s\n", (char*)data);
 
     // Reply packet back to the client that has just sent the message (source_addr)
     simple_udp_sendto(c, MY_MESSAGE, sizeof(MY_MESSAGE), source_addr);
@@ -57,16 +57,14 @@ PROCESS_THREAD(udp_server_process, ev, data)
   PROCESS_BEGIN();
   printf("Hello, welcome to LAB 3 (Exercise 1 - Server)\n");
 
-  //Only done in the server as only 1 root device is needed.
+  //Only done (only 1 root)
   NETSTACK_ROUTING.root_start();
 
-  // Local port: server. Remote port: client.
+  // Parameters: Local port//server//Remote port//Client.
   simple_udp_register(&udp_conn, UDP_SERVER_PORT, NULL, UDP_CLIENT_PORT, udp_rx_callback);
 
-  // The process must give the control back to the scheduler (while(1){} blocks the whole OS).
-  // Everything is done inside the callback.
   while(1) {
-      PROCESS_YIELD();
+      PROCESS_YIELD(); //Gives the control back to the scheduler.
   }
 
   PROCESS_END();

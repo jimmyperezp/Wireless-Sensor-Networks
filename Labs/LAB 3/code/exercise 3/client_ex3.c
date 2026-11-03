@@ -1,13 +1,11 @@
 /*
- * LAB3 - Exercise 3: UDP Client code (RPL node)
- *  Created on: Oct 26, 2026
- *  Author: Adrián Riveiro & Jaime Pérez
+ *  LAB3 - Exercise 3: CLIENT
+ *  Created on: Nov 3 2026
+ *  Author: Jaime Pérez
  *
- *  Lab 2 (Exercise 2) application, but now the commands arrive from the server
- *  through UDP instead of the serial line. Frame format: LR | LG | ST | SH [+ N].
- *  The results (measurements, LED actions and errors) are sent back to the server.
+ *  Same app as in Exercise 2 Lab 2. Now, the commands are sent from the server
+ *  to the client using the UDP protocol.
  */
-
 
 #include "contiki.h"
 #include <stdio.h> /* For printf() */
@@ -31,13 +29,13 @@
 #define UDP_CLIENT_PORT 8765
 #define UDP_SERVER_PORT 5678
 
-#define HELLO_MSG    "HELLO"
+#define HELLO_MSG    "I'M THE CLIENT"
 #define HELLO_PERIOD 10  // Seconds between HELLO messages (so that the server knows this client)
 #define MAX_PERIOD   30
 #define FRAME_SIZE   16  // Max length of a received frame
 
 process_event_t coordinator_event;
-process_event_t udp_frame_event;  // Posted by the UDP callback when a frame arrives
+process_event_t udp_reception_event;  // Posted by the UDP callback when a frame arrives
 
 static struct simple_udp_connection udp_conn; //Identifies the socket that will be later used.
 static char rx_frame[FRAME_SIZE];             // Copy of the last received frame
@@ -52,18 +50,15 @@ PROCESS(sensors_setup, "Sensors setup");
 PROCESS(coordinator, "Coordinator process");
 PROCESS(toggle_leds, "Toggle LEDs process");
 PROCESS(read_sensors, "Sensors reading");
-PROCESS(udp_client_process, "Client process");
+PROCESS(client_process, "Client process");
 
-AUTOSTART_PROCESSES(&sensors_setup, &coordinator, &toggle_leds, &read_sensors, &udp_client_process);
+AUTOSTART_PROCESSES(&sensors_setup, &coordinator, &toggle_leds, &read_sensors, &client_process);
 
 
-/*--------------------Auxiliary functions--------------------------------------*/
-// Prints a message locally and sends it to the server (root)
+/*-------------------- Client to server transmissions -------------------------*/
 static void send_to_server(char *msg)
 {
     static uip_ipaddr_t server_addr;
-
-    printf("%s\n", msg);
 
     if(NETSTACK_ROUTING.node_is_reachable() &&
        NETSTACK_ROUTING.get_root_ipaddr(&server_addr)) {
@@ -87,7 +82,7 @@ static void udp_rx_callback(struct simple_udp_connection *c,
     memcpy(rx_frame, data, datalen);
     rx_frame[datalen] = '\0';
 
-    process_post(&coordinator, udp_frame_event, rx_frame);
+    process_post(&coordinator, udp_reception_event, rx_frame);
 }
 /*---------------------------------------------------------------------------*/
 
@@ -119,16 +114,17 @@ PROCESS_THREAD(coordinator, ev, data) {
     PROCESS_BEGIN();
 
     coordinator_event = process_alloc_event();
-    udp_frame_event = process_alloc_event();
+    udp_reception_event = process_alloc_event();
 
     while(1) {
 
-        // Same coordinator as in Lab 2, but now waiting for the UDP frames
-        PROCESS_WAIT_EVENT_UNTIL(ev == udp_frame_event);
+        // Same coordinator as in Lab 2, but now waiting for the server's messages instead 
+        // of serial line inputs.
+        PROCESS_WAIT_EVENT_UNTIL(ev == udp_reception_event);
 
         incoming_data = (char*)data;
 
-        printf("\nFrame received from server: [%s]\n", incoming_data);
+        printf("\nMessage received from server: [%s]\n", incoming_data);
 
         // First, I check if the message is valid: It must have 2 characters and an optional number:
         if(strlen(incoming_data) < 2) {
@@ -184,7 +180,8 @@ PROCESS_THREAD(toggle_leds, ev, data) {
             if(incoming_data->action == 'R') {
                 leds_toggle(LEDS_RED);
                 if(incoming_data->period > 0) etimer_set(&red_timer, (clock_time_t)incoming_data->period * CLOCK_SECOND);
-                else etimer_stop(&red_timer);
+                else etimer_stop(&red_timer); //If the received period is 0 or not specified.
+
                 sprintf(msg, "Red LED toggled. Period: %d s", incoming_data->period);
                 send_to_server(msg);
             }
@@ -193,6 +190,7 @@ PROCESS_THREAD(toggle_leds, ev, data) {
                 leds_toggle(LEDS_GREEN);
                 if(incoming_data->period > 0) etimer_set(&green_timer, (clock_time_t)incoming_data->period * CLOCK_SECOND);
                 else etimer_stop(&green_timer);
+
                 sprintf(msg, "Green LED toggled. Period: %d s", incoming_data->period);
                 send_to_server(msg);
             }
@@ -268,10 +266,9 @@ PROCESS_THREAD(read_sensors, ev, data) {
     PROCESS_END();
 }
 
-
 // Network process: registers the UDP socket and sends a periodic HELLO,
 // so that the server learns the IP address of this client.
-PROCESS_THREAD(udp_client_process, ev, data)
+PROCESS_THREAD(client_process, ev, data)
 {
     static struct etimer hello_timer;
     static uip_ipaddr_t dest_addr;
@@ -288,14 +285,14 @@ PROCESS_THREAD(udp_client_process, ev, data)
 
         PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&hello_timer));
 
-        if(NETSTACK_ROUTING.node_is_reachable() &&
-           NETSTACK_ROUTING.get_root_ipaddr(&dest_addr)) {
-            simple_udp_sendto(&udp_conn, HELLO_MSG, sizeof(HELLO_MSG), &dest_addr);
+        if(NETSTACK_ROUTING.node_is_reachable()){
+            if(NETSTACK_ROUTING.get_root_ipaddr(&dest_addr)){
+                simple_udp_sendto(&udp_conn, HELLO_MSG, sizeof(HELLO_MSG), &dest_addr);
+            }
+            else printf("Root address not found");
         }
-        else {
-            printf("Node unreachable yet...\n");
-        }
-
+        else printf("Client not yet reachable.\n");
+        
         etimer_reset(&hello_timer);
     }
 

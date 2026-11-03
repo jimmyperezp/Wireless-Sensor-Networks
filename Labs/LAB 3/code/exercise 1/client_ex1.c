@@ -1,7 +1,7 @@
 /*
- * LAB3 - Exercise 1: UDP Client code (RPL node)
- *  Created on: Oct 26, 2026
- *  Author: Adrián Riveiro & Jaime Pérez
+ * LAB3 - Exercise 1: CLIENT 
+ *  Created on: Nov 3, 2026
+ *  Author: Jaime Pérez
  *
  *  The client periodically sends a message to the server (root) and shows in
  *  its terminal the content of the reply received from the server.
@@ -67,21 +67,17 @@ PROCESS_THREAD(udp_client_process, ev, data)
 
       PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
 
-      // node_is_reachable() must be CALLED (with parentheses). Without them, the
-      // function pointer is evaluated, which is always true.
-      if(NETSTACK_ROUTING.node_is_reachable() &&
-         NETSTACK_ROUTING.get_root_ipaddr(&dest_addr)) {
 
-          printf("\nSending to server ");
-          uiplib_ipaddr_print(&dest_addr);
-          printf(": %s\n", MY_MESSAGE);
-
-          simple_udp_sendto(&udp_conn, MY_MESSAGE, sizeof(MY_MESSAGE), &dest_addr);
-          leds_toggle(LEDS_RED);
-      }
-      else {
-          printf("Node unreachable yet...\n");
-      }
+      if(NETSTACK_ROUTING.node_is_reachable()){
+            if(NETSTACK_ROUTING.get_root_ipaddr(&dest_addr)){
+                
+                printf("\nSending [%s] to the server", MY_MESSAGE);
+                simple_udp_sendto(&udp_conn, HELLO_MSG, sizeof(HELLO_MSG), &dest_addr);
+                leds_toggle(LEDS_RED);
+            }
+            else printf("Root address not found");
+        }
+        else printf("Client not yet reachable.\n");
 
       etimer_reset(&timer);
   }

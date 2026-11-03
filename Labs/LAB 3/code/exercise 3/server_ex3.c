@@ -26,7 +26,7 @@
 #define UDP_CLIENT_PORT 8765
 #define UDP_SERVER_PORT 5678
 
-#define HELLO_MSG   "HELLO"
+#define HELLO_MSG   "I'M THE SERVER"
 #define MAX_CLIENTS 5
 
 static struct simple_udp_connection udp_conn; //Identifies the socket that will be later used.
