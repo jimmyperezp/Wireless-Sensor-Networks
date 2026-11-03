@@ -25,8 +25,8 @@ static struct simple_udp_connection udp_conn; //Identifies the socket that will 
 
 
 /*---------------------------------------------------------------------------*/
-PROCESS(udp_server_process, "Server process");
-AUTOSTART_PROCESSES(&udp_server_process);
+PROCESS(server_process, "Server process");
+AUTOSTART_PROCESSES(&server_process);
 
 
 /*--------------------Callback definitions------------------------------------*/
@@ -37,6 +37,8 @@ static void udp_rx_callback(struct simple_udp_connection *c,
                     uint16_t dest_port,
                     const uint8_t *data, uint16_t datalen)
 {
+    leds_toggle(LEDS_GREEN); //LEDs sequence: Green = received package.
+
     printf("\nReceived packet from ");
     uiplib_ipaddr_print(source_addr);
     printf(", Data: %s\n", (char*)data);
@@ -45,19 +47,19 @@ static void udp_rx_callback(struct simple_udp_connection *c,
     simple_udp_sendto(c, MY_MESSAGE, sizeof(MY_MESSAGE), source_addr);
     printf("Reply sent: %s\n", MY_MESSAGE);
 
-    leds_toggle(LEDS_GREEN); // Visual feedback of each reception
+    leds_toggle(LEDS_GREEN); // RED = message sent.
 }
 /*---------------------------------------------------------------------------*/
 
 
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(udp_server_process, ev, data)
+PROCESS_THREAD(server_process, ev, data)
 {
 
   PROCESS_BEGIN();
   printf("Hello, welcome to LAB 3 (Exercise 1 - Server)\n");
 
-  //Only done (only 1 root)
+  //Only done by the server(only 1 root)
   NETSTACK_ROUTING.root_start();
 
   // Parameters: Local port//server//Remote port//Client.

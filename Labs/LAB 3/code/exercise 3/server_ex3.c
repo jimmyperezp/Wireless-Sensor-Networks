@@ -36,8 +36,8 @@ static int num_clients = 0;
 
 
 /*---------------------------------------------------------------------------*/
-PROCESS(udp_server_process, "Server process");
-AUTOSTART_PROCESSES(&udp_server_process);
+PROCESS(server_process, "Server process");
+AUTOSTART_PROCESSES(&server_process);
 
 
 /*--------------------Callback definitions------------------------------------*/
@@ -79,7 +79,7 @@ static void udp_rx_callback(struct simple_udp_connection *c,
 
 
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(udp_server_process, ev, data)
+PROCESS_THREAD(server_process, ev, data)
 {
   static int i;
 

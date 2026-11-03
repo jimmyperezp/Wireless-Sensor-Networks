@@ -26,8 +26,8 @@ static struct simple_udp_connection udp_conn; //Identifies the socket that will 
 
 
 /*---------------------------------------------------------------------------*/
-PROCESS(udp_client_process, "Client process");
-AUTOSTART_PROCESSES(&udp_client_process);
+PROCESS(client_process, "Client process");
+AUTOSTART_PROCESSES(&client_process);
 
 
 /*--------------------Callback definitions------------------------------------*/
@@ -49,7 +49,7 @@ static void udp_rx_callback(struct simple_udp_connection *c,
 
 
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(udp_client_process, ev, data)
+PROCESS_THREAD(client_process, ev, data)
 {
   static struct etimer timer;
   static uip_ipaddr_t dest_addr;
@@ -68,7 +68,7 @@ PROCESS_THREAD(udp_client_process, ev, data)
       PROCESS_WAIT_EVENT_UNTIL(etimer_expired(&timer));
 
 
-      if(NETSTACK_ROUTING.node_is_reachable()){
+        if(NETSTACK_ROUTING.node_is_reachable()){
             if(NETSTACK_ROUTING.get_root_ipaddr(&dest_addr)){
                 
                 printf("\nSending [%s] to the server", MY_MESSAGE);

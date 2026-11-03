@@ -36,8 +36,8 @@ static struct simple_udp_connection udp_conn; //Identifies the socket that will 
 
 /*---------------------------------------------------------------------------*/
 PROCESS(sensors_setup, "Sensors setup");
-PROCESS(udp_client_process, "Client process");
-AUTOSTART_PROCESSES(&sensors_setup, &udp_client_process);
+PROCESS(client_process, "Client process");
+AUTOSTART_PROCESSES(&sensors_setup, &client_process);
 
 
 /*--------------------Callback definitions------------------------------------*/
@@ -74,7 +74,7 @@ PROCESS_THREAD(sensors_setup, ev, data)
 
 
 /*---------------------------------------------------------------------------*/
-PROCESS_THREAD(udp_client_process, ev, data)
+PROCESS_THREAD(client_process, ev, data)
 {
   static struct etimer timer;
   static uip_ipaddr_t dest_addr;

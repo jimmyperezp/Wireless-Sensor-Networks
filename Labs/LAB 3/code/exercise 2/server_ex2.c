@@ -1,10 +1,10 @@
 /*
- * LAB3 - Exercise 2: UDP Server code (RPL root)
- *  Created on: Oct 26, 2026
- *  Author: Adrián Riveiro & Jaime Pérez
- *
- *  The server shows in its terminal the sensor data (temperature and humidity)
- *  periodically sent by the clients.
+ * LAB3 - Exercise 2: SERVER
+ *  Created on: Nov 3, 2026
+ *  Author: Jaime Pérez
+ *  
+ *  The server receives periodical data including temperature and humidity from the client.
+ *  
  */
 
 
@@ -38,7 +38,7 @@ static void udp_rx_callback(struct simple_udp_connection *c,
     // (Timestamp in seconds, as in Lab 2) + origin of the measurement
     printf("\n(Timestamp: %d) Sensor data from ", (int)(clock_time()/1000));
     uiplib_ipaddr_print(source_addr);
-    printf(" -> %.*s\n", (int)datalen, (char*)data);
+    printf(" -> %s\n",(char*)data);
 
     leds_toggle(LEDS_GREEN);
 }
