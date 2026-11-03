@@ -20,7 +20,7 @@
 #define UDP_CLIENT_PORT 8765
 #define UDP_SERVER_PORT 5678
 
-#define MY_MESSAGE "Mundial LOL 2026" // Reply sent back to the clients
+#define MY_MESSAGE "Soy el server" // Reply sent back to the clients
 static struct simple_udp_connection udp_conn; //Identifies the socket that will be later used.
 
 
