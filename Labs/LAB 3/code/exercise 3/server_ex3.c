@@ -30,8 +30,8 @@
 #define MAX_CLIENTS 5
 
 static struct simple_udp_connection udp_conn; //Identifies the socket that will be later used.
-
-static int num_clients = 0;
+static const uip_ipaddr_t *client_addr;
+static bool client_discovered = false;
 
 
 /*---------------------------------------------------------------------------*/
@@ -51,12 +51,16 @@ static void udp_rx_callback(struct simple_udp_connection *c,
     //First, I check if the client is known. If it's new, then I show the time taken to discover it.
 
     leds_toggle(LEDS_GREEN); //GREEN LED = received message
-    
-    if(strncmp((char*)data, HELLO_MSG, strlen(HELLO_MSG)) == 0){
-        printf("(Timestamp: %d) Client detected!\n", (int)clock_time());
-        num_clients++;
-        
-        return; //The hello message ends the reception callback.
+
+    if((strncmp((char*)data, HELLO_MSG, strlen(HELLO_MSG)) == 0)){
+    	if(!client_discovered){
+    		client_discovered = true;
+    		printf("(Timestamp: %d) Client detected!\n", (int)clock_time());
+    		client_addr = source_addr;
+    	}
+    	else return; //The hello message ends the reception callback.
+
+
     }
 
     //If the message isn't a hello, then it's printed.
@@ -70,7 +74,7 @@ static void udp_rx_callback(struct simple_udp_connection *c,
 /*---------------------------------------------------------------------------*/
 PROCESS_THREAD(server_process, ev, data)
 {
-  static int i;
+
 
   PROCESS_BEGIN();
   printf("Hello, welcome to LAB 3 (Exercise 3 - Server)\n");
@@ -87,19 +91,16 @@ PROCESS_THREAD(server_process, ev, data)
       PROCESS_WAIT_EVENT_UNTIL(ev == serial_line_event_message);
       printf("\nMessage received: [%s]", (char*)data);
 
-      if(num_clients == 0) {
+      if(!client_discovered) {
           printf(" not sent. No clients registered yet\n");
           continue;
       }
-
-      for(i = 0; i < num_clients; i++) {
-        //The message is sent to the client, who will be in charge of filtering it.  
-        simple_udp_sendto(&udp_conn, data, strlen((char*)data) + 1, &clients[i]); // +1 to send the '\0'
-      }
-      printf(" sent to %d client(s)\n", num_clients);
+      else simple_udp_sendto(&udp_conn, data, strlen((char*)data) + 1, client_addr); // +1 to send the '\0'
+      //The message is sent to the client, who is in charge of filtering it.
 
       leds_toggle(LEDS_RED); // RED LED = sent message.
   }
 
   PROCESS_END();
 }
+
