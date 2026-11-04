@@ -39,7 +39,7 @@ static void udp_rx_callback(struct simple_udp_connection *c,
 {
     leds_toggle(LEDS_GREEN); //LEDs sequence: Green = received package.
 
-    printf("\nReceived packet from ");
+    printf("\n(Timestamp: %d) Received packet from ", (int)clock_time());
     uiplib_ipaddr_print(source_addr);
     printf(", Data: %s\n", (char*)data);
 
