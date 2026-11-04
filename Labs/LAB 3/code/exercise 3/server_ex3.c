@@ -26,12 +26,11 @@
 #define UDP_CLIENT_PORT 8765
 #define UDP_SERVER_PORT 5678
 
-#define HELLO_MSG   "I'M THE SERVER"
+#define HELLO_MSG   "HELLO!"
 #define MAX_CLIENTS 5
 
 static struct simple_udp_connection udp_conn; //Identifies the socket that will be later used.
 
-static uip_ipaddr_t clients[MAX_CLIENTS]; // IP addresses of the known clients
 static int num_clients = 0;
 
 
@@ -48,29 +47,16 @@ static void udp_rx_callback(struct simple_udp_connection *c,
                     uint16_t dest_port,
                     const uint8_t *data, uint16_t datalen)
 {
-    int i;
-    int known = 0;
 
-    // First, I check if the client is already registered
-    for(i = 0; i < num_clients; i++) {
-        if(uip_ipaddr_cmp(&clients[i], source_addr)) known = 1;
+    //First, I check if the client is known. If it's new, then I show the time taken to discover it.
+
+    if(strncmp((char*)data, HELLO_MSG, strlen(HELLO_MSG)) == 0){
+        printf("(Timestamp: %d) Client detected!\n", (int)clock_time());
+        num_clients++;
+        return; //The hello message ends the reception callback.
     }
 
-    // If not, it is added to the list
-    if(!known) {
-        if(num_clients < MAX_CLIENTS) {
-            uip_ipaddr_copy(&clients[num_clients], source_addr);
-            num_clients++;
-            printf("\nNew client registered (%d/%d): ", num_clients, MAX_CLIENTS);
-            uiplib_ipaddr_print(source_addr);
-            printf("\n");
-        }
-        else printf("\nClient list full, new client ignored\n");
-    }
-
-    // HELLO messages are only used to register clients, so they are not shown
-    if(strncmp((char*)data, HELLO_MSG, strlen(HELLO_MSG)) == 0) return;
-
+    //If the message isn't a hello, then it's printed.
     printf("\n[");
     uiplib_ipaddr_print(source_addr);
     printf("] %.*s\n", (int)datalen, (char*)data);

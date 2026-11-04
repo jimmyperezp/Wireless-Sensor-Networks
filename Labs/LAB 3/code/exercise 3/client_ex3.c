@@ -29,7 +29,7 @@
 #define UDP_CLIENT_PORT 8765
 #define UDP_SERVER_PORT 5678
 
-#define HELLO_MSG    "I'M THE CLIENT"
+#define HELLO_MSG    "HELLO!"
 #define HELLO_PERIOD 10  // Seconds between HELLO messages (so that the server knows this client)
 #define MAX_PERIOD   30
 #define FRAME_SIZE   16  // Max length of a received frame
