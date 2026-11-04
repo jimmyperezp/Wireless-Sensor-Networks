@@ -106,12 +106,12 @@ PROCESS_THREAD(client_process, ev, data)
                   (int)(temper/1000), (int)(temper%1000),
                   (int)(hume/1000), (int)(hume%1000));
 
-          printf("\nSending to server: %s\n", buf);
+          printf("\n(Timestamp %d) Sending to server: %s\n", (int)clock_time(), buf);
           simple_udp_sendto(&udp_conn, buf, strlen(buf) + 1, &dest_addr); // +1 to send the '\0'
           leds_toggle(LEDS_RED); //RED = message sent.
       }
       else {
-          printf("Node unreachable yet...\n");
+          printf("Server unreachable yet...\n");
       }
 
       etimer_reset(&timer);

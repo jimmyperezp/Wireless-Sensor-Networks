@@ -118,7 +118,7 @@ PROCESS_THREAD(coordinator, ev, data) {
 
     while(1) {
 
-        // Same coordinator as in Lab 2, but now waiting for the server's messages instead 
+        // Same coordinator as in Lab 2, but now waiting for the server's messages instead
         // of serial line inputs.
         PROCESS_WAIT_EVENT_UNTIL(ev == udp_reception_event);
 
@@ -291,10 +291,11 @@ PROCESS_THREAD(client_process, ev, data)
             }
             else printf("Root address not found");
         }
-        else printf("Client not yet reachable.\n");
-        
+        else printf("Server not yet reachable.\n");
+
         etimer_reset(&hello_timer);
     }
 
     PROCESS_END();
 }
+
