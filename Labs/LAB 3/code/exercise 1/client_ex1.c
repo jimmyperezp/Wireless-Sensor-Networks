@@ -1,5 +1,5 @@
 /*
- * LAB3 - Exercise 1: CLIENT 
+ * LAB3 - Exercise 1: CLIENT
  *  Created on: Nov 3, 2026
  *  Author: Jaime Pérez
  *
@@ -21,7 +21,7 @@
 
 #define SEND_PERIOD 2 // Seconds between messages
 
-#define MY_MESSAGE "Test UDP Client"
+#define MY_MESSAGE "I'm the client"
 static struct simple_udp_connection udp_conn; //Identifies the socket that will be later used.
 
 
@@ -44,6 +44,7 @@ static void udp_rx_callback(struct simple_udp_connection *c,
     printf(", Data: %.*s\n", (int)datalen, (char*)data); // Only datalen characters are printed
 
     leds_toggle(LEDS_GREEN); //Green toggle - message received.
+}
 /*---------------------------------------------------------------------------*/
 
 
@@ -69,17 +70,18 @@ PROCESS_THREAD(client_process, ev, data)
 
         if(NETSTACK_ROUTING.node_is_reachable()){
             if(NETSTACK_ROUTING.get_root_ipaddr(&dest_addr)){
-                
-                printf("\nSending [%s] to the server", MY_MESSAGE);
-                simple_udp_sendto(&udp_conn, HELLO_MSG, sizeof(HELLO_MSG), &dest_addr);
+
+                printf("\nSending [%s] to the server\n", MY_MESSAGE);
+                simple_udp_sendto(&udp_conn, MY_MESSAGE, sizeof(MY_MESSAGE), &dest_addr);
                 leds_toggle(LEDS_RED); //RED - message sent.
             }
             else printf("Root address not found");
         }
-        else printf("Client not yet reachable.\n");
+        else printf("(Timestamp: %d) Server not yet reachable.\n", (int)clock_time());
 
       etimer_reset(&timer);
   }
 
   PROCESS_END();
 }
+
