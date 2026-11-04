@@ -40,7 +40,7 @@ static void udp_rx_callback(struct simple_udp_connection *c,
     uiplib_ipaddr_print(source_addr);
     printf(" -> %s\n",(char*)data);
 
-    leds_toggle(LEDS_GREEN);
+    leds_toggle(LEDS_GREEN); // Green LED = received message.
 }
 /*---------------------------------------------------------------------------*/
 

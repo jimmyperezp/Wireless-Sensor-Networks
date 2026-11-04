@@ -50,9 +50,12 @@ static void udp_rx_callback(struct simple_udp_connection *c,
 
     //First, I check if the client is known. If it's new, then I show the time taken to discover it.
 
+    leds_toggle(LEDS_GREEN); //GREEN LED = received message
+    
     if(strncmp((char*)data, HELLO_MSG, strlen(HELLO_MSG)) == 0){
         printf("(Timestamp: %d) Client detected!\n", (int)clock_time());
         num_clients++;
+        
         return; //The hello message ends the reception callback.
     }
 
@@ -89,14 +92,13 @@ PROCESS_THREAD(server_process, ev, data)
           continue;
       }
 
-      // The frame is forwarded to all the known clients. The validation of the
-      // frame is done in the client (same coordinator as in Lab 2).
       for(i = 0; i < num_clients; i++) {
-          simple_udp_sendto(&udp_conn, data, strlen((char*)data) + 1, &clients[i]); // +1 to send the '\0'
+        //The message is sent to the client, who will be in charge of filtering it.  
+        simple_udp_sendto(&udp_conn, data, strlen((char*)data) + 1, &clients[i]); // +1 to send the '\0'
       }
       printf(" sent to %d client(s)\n", num_clients);
 
-      leds_toggle(LEDS_RED);
+      leds_toggle(LEDS_RED); // RED LED = sent message.
   }
 
   PROCESS_END();

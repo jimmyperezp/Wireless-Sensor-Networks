@@ -43,8 +43,7 @@ static void udp_rx_callback(struct simple_udp_connection *c,
     uiplib_ipaddr_print(source_addr);
     printf(", Data: %.*s\n", (int)datalen, (char*)data); // Only datalen characters are printed
 
-    leds_toggle(LEDS_GREEN); //To "see" the incoming messages.
-}
+    leds_toggle(LEDS_GREEN); //Green toggle - message received.
 /*---------------------------------------------------------------------------*/
 
 
@@ -73,7 +72,7 @@ PROCESS_THREAD(client_process, ev, data)
                 
                 printf("\nSending [%s] to the server", MY_MESSAGE);
                 simple_udp_sendto(&udp_conn, HELLO_MSG, sizeof(HELLO_MSG), &dest_addr);
-                leds_toggle(LEDS_RED);
+                leds_toggle(LEDS_RED); //RED - message sent.
             }
             else printf("Root address not found");
         }

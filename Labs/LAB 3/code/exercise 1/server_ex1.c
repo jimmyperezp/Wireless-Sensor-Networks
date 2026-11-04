@@ -43,11 +43,13 @@ static void udp_rx_callback(struct simple_udp_connection *c,
     uiplib_ipaddr_print(source_addr);
     printf(", Data: %s\n", (char*)data);
 
+    leds_toggle(LEDS_GREEN); //GREEN = message received.
+
     // Reply packet back to the client that has just sent the message (source_addr)
     simple_udp_sendto(c, MY_MESSAGE, sizeof(MY_MESSAGE), source_addr);
     printf("Reply sent: %s\n", MY_MESSAGE);
 
-    leds_toggle(LEDS_GREEN); // RED = message sent.
+    leds_toggle(LEDS_RED); // RED = message sent.
 }
 /*---------------------------------------------------------------------------*/
 
