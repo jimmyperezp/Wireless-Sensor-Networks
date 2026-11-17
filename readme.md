@@ -3,7 +3,7 @@
 <!-- 🖼️ Optional: add a banner image at docs/images/banner.png and uncomment the line below -->
 <!-- <img src="docs/images/banner.png" alt="Project banner" width="1000"/> -->
 
-<img src="https://github.com/HQarroum/awesome-iot/blob/master/iot-logo.png" alt="IoT" width="40" height="40"/> <img src="https://upload.wikimedia.org/wikipedia/commons/1/18/C_Programming_Language.svg" alt="C" width="40" height="40"/> <img src="https://upload.wikimedia.org/wikipedia/commons/9/9a/Visual_Studio_Code_1.35_icon.svg" alt="VS Code" width="40" height="40"/><img src="https://github.com/contiki-ng/contiki-ng.github.io/blob/master/images/contiki-ng-logo.png?raw=true" alt="Contiki" width="40" height="40"/>  
+<img src="https://github.com/HQarroum/awesome-iot/blob/master/iot-logo.png" alt="IoT" width="40" height="40"/> <img src="https://upload.wikimedia.org/wikipedia/commons/1/18/C_Programming_Language.svg" alt="C" width="40" height="40"/> <img src="https://upload.wikimedia.org/wikipedia/commons/9/9a/Visual_Studio_Code_1.35_icon.svg" alt="VS Code" width="40" height="40"/><img src="https://github.com/contiki-ng/contiki-ng.github.io/blob/master/images/logo/Contiki_logo_2RGB.png" alt="Contiki" width="40" height="40"/>  
 
 
 > Final project of the **Wireless Sensor Networks** course (Máster en Electrónica Industrial, ETSII – UPM): **cooperative vehicle localization in a parking lot** using **RSSI** measurements between **Cookie** nodes running **Contiki-NG**.
@@ -23,9 +23,8 @@
 6. [Software & tools](#software--tools)
     - [Contiki-NG](#contiki-ng)
     - [Development environment](#development-environment)
-7. [Building and flashing](#building-and-flashing)
-8. [Team](#team)
-9. [Project status](#project-status)
+7. [Team](#team)
+8. [Project status](#project-status)
 
 <br><br>
 
@@ -110,7 +109,7 @@ Wireless-Sensor-Networks/
 
 ### Hardware used
 
-<img src="https://github.com/contiki-ng/contiki-ng.github.io/blob/master/images/contiki-ng-logo.png?raw=true" alt="Contiki-NG" width="150" align="right"/>
+<img src="https://github.com/jimmyperezp/Wireless-Sensor-Networks/blob/main/tools/images/CookieNode.png" alt="Contiki-NG" width="150" align="right"/>
 
 The project uses **Cookie** nodes: a modular wireless sensor platform with stackable layers (processing, radio communication, sensors and power), which makes it easy to adapt each node to the needs of the application.
 
