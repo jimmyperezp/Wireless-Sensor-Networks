@@ -1,14 +1,20 @@
 /*
  * server.c
- * Recibe las balizas del cliente, lee el RSSI de cada paquete, lo promedia
- * en ventanas de WINDOW_SIZE paquetes y estima la distancia con el modelo
- * log-distancia:
+ * Es la raiz de la red RPL. Recibe las balizas del cliente, lee el RSSI de
+ * cada paquete, lo promedia en ventanas de WINDOW_SIZE paquetes y estima la
+ * distancia con el modelo log-distancia:
  *
  *      d = D_REF * 10^((RSSI_REF - RSSI_medio) / (10 * n))
  *
  * Salida por el puerto serie (formato CSV, facil de procesar):
- *   RAW,<seq>,<rssi_dBm>                        -> cada paquete (calibracion)
+ *   RAW,<seq>,<rssi_dBm>                        -> cada paquete (si PRINT_RAW = 1)
  *   DIST,<ventana>,<rssi_medio>,<std>,<dist_m>,<recibidos>,<perdidos>
+ *
+ * NOTA: el servidor NO responde al cliente.
+ * La medida del RSSI y el calculo de la distancia se hacen y se muestran
+ * unicamente aqui, en el servidor. El cliente solo envia balizas.
+ * Si en el futuro el cliente (el coche) necesita conocer su distancia o su
+ * posicion, habra que anadir un mensaje de respuesta servidor -> cliente.
  */
 
 #include "contiki.h"
@@ -27,47 +33,47 @@
 /* (deben ser IGUALES en client.c y server.c)                             */
 #define UDP_PORT_SERVER   5678
 #define UDP_PORT_CLIENT   8765
-#define TX_POWER_DBM      0      /* misma potencia en calibracion y medidas */
 #define MSG_BEACON        1
-#define MSG_RESULT        2
 
-/* Cliente -> servidor */
+/* Mensaje que el cliente envia al servidor (baliza): tipo "beacon_msg_t".
+   Contiene 2 campos (3 bytes en total):
+     - type (1 byte): tipo de mensaje. Siempre vale MSG_BEACON (definido antes)
+     - seq  (2 bytes): numero de secuencia. Aumenta en 1 con cada baliza, y asi
+                       el servidor detecta si se ha perdido algun paquete.
+   "packed" impide que el compilador anada bytes de relleno, para que emisor y
+   receptor interpreten los bytes exactamente igual.
+*/
 typedef struct __attribute__((packed)) {
   uint8_t  type;            /* MSG_BEACON */
   uint16_t seq;             /* numero de secuencia */
 } beacon_msg_t;
-
-/* Servidor -> cliente (una vez por ventana) */
-typedef struct __attribute__((packed)) {
-  uint8_t  type;            /* MSG_RESULT */
-  uint16_t window_id;
-  int16_t  rssi_mean_x100;  /* RSSI medio * 100 (dBm) */
-  uint16_t rssi_std_x100;   /* desviacion tipica * 100 (dB) */
-  uint32_t dist_cm;         /* distancia estimada (cm) */
-  uint8_t  n_samples;
-  uint8_t  n_lost;
-} result_msg_t;
 /* ====================================================================== */
 
 /* ========================= CONFIGURACION ========================= */
-#define RSSI_REF_DBM     (-67)  /* RSSI medido a la distancia de referencia (calibrar) */
+/* Parametros del modelo (obtenidos en la calibracion), con decimales:
+     - RSSI_REF_DBM: RSSI medido a la distancia de referencia D_REF_CM
+     - PATH_LOSS_N: exponente de perdidas n
+   WINDOW_SIZE: balizas que se promedian para cada distancia. Con el cliente
+   enviando cada 100 ms, sale una distancia cada 50 x 100 ms = 5 s. */
+#define RSSI_REF_DBM     (-67.0f) /* RSSI medido a la distancia de referencia (calibrar) */
 #define D_REF_CM         100    /* distancia de referencia: 1 m */
-#define PATH_LOSS_N_X10  18   /* exponente de perdidas n * 10  (25 -> n = 2.5) */
+#define PATH_LOSS_N      1.8f     /* exponente de perdidas n (calibrar) */
 #define WINDOW_SIZE      50     /* paquetes por estimacion */
 #define PRINT_RAW        0      /* 1 = imprime cada muestra (util para calibrar) */
 /* ================================================================= */
 
+/* Socket UDP: guarda los puertos y la funcion de recepcion */
 static struct simple_udp_connection udp_conn;
 
-/* Acumuladores de la ventana */
-static int32_t  sum_rssi;
-static int32_t  sum_rssi_sq;
-static uint16_t n_samples;
-static uint16_t n_lost;
-static uint16_t window_id;
-static uint16_t last_seq;
-static uint8_t  have_last_seq;
-static uint8_t  client_discovered = 0;
+/* Acumuladores de la ventana (static: conservan su valor entre paquetes) */
+static int32_t  sum_rssi;                /* suma de los RSSI de la ventana */
+static int32_t  sum_rssi_sq;             /* suma de los RSSI al cuadrado */
+static uint16_t n_samples;               /* paquetes recibidos en la ventana */
+static uint16_t n_lost;                  /* paquetes perdidos en la ventana */
+static uint16_t window_id;               /* numero de ventana actual */
+static uint16_t last_seq;                /* ultimo numero de secuencia recibido */
+static uint8_t  have_last_seq;           /* 1 cuando ya se ha recibido alguna baliza */
+static uint8_t  client_discovered = 0;   /* 1 cuando se ha detectado al cliente */
 
 PROCESS(rssi_server_process, "RSSI server");
 AUTOSTART_PROCESSES(&rssi_server_process);
@@ -103,11 +109,11 @@ sqrt_approx(float x)
   return r;
 }
 
-/* d = D_REF * 10^((RSSI_REF - rssi) / (10 n)) ; 10*n = PATH_LOSS_N_X10 */
+/* d = D_REF * 10^((RSSI_REF - rssi) / (10 n)) */
 static uint32_t
 rssi_to_distance_cm(float rssi_mean)
 {
-  float expo = ((float)RSSI_REF_DBM - rssi_mean) / (float)PATH_LOSS_N_X10;
+  float expo = (RSSI_REF_DBM - rssi_mean) / (10.0f * PATH_LOSS_N);
   if(expo > 4.0f) {
     expo = 4.0f;          /* limita a D_REF * 10^4 para evitar desbordes */
   }
@@ -141,8 +147,10 @@ read_rssi(void)
   return rssi;
 }
 /*---------------------------------------------------------------------------*/
+/* Se llama cuando la ventana tiene WINDOW_SIZE muestras: calcula la media,
+   la desviacion tipica y la distancia, las imprime y reinicia la ventana. */
 static void
-close_window(const uip_ipaddr_t *client_addr)
+close_window(void)
 {
   float mean = (float)sum_rssi / (float)n_samples;
   float var  = (float)sum_rssi_sq / (float)n_samples - mean * mean;
@@ -160,17 +168,6 @@ close_window(const uip_ipaddr_t *client_addr)
   print_x100((int32_t)dist_cm);
   printf(",%u,%u\n", n_samples, n_lost);
 
-  /* Devuelve el resultado al cliente */
-  result_msg_t res;
-  res.type           = MSG_RESULT;
-  res.window_id      = window_id;
-  res.rssi_mean_x100 = (int16_t)mean_x100;
-  res.rssi_std_x100  = (uint16_t)std_x100;
-  res.dist_cm        = dist_cm;
-  res.n_samples      = (uint8_t)n_samples;
-  res.n_lost         = (uint8_t)(n_lost > 255 ? 255 : n_lost);
-  simple_udp_sendto(&udp_conn, &res, sizeof(res), client_addr);
-
   /* Reinicia la ventana */
   window_id++;
   sum_rssi = 0;
@@ -179,6 +176,7 @@ close_window(const uip_ipaddr_t *client_addr)
   n_lost = 0;
 }
 /*---------------------------------------------------------------------------*/
+/* Se ejecuta cada vez que llega una baliza del cliente */
 static void
 udp_rx_callback(struct simple_udp_connection *c,
                 const uip_ipaddr_t *sender_addr,
@@ -224,7 +222,7 @@ udp_rx_callback(struct simple_udp_connection *c,
   n_samples++;
 
   if(n_samples >= WINDOW_SIZE) {
-    close_window(sender_addr);
+    close_window();
   }
 }
 /*---------------------------------------------------------------------------*/
@@ -232,21 +230,26 @@ PROCESS_THREAD(rssi_server_process, ev, data)
 {
   PROCESS_BEGIN();
 
-  if(NETSTACK_RADIO.set_value(RADIO_PARAM_TXPOWER, TX_POWER_DBM) != RADIO_RESULT_OK) {
-    printf("AVISO: no se pudo fijar la potencia TX\n");
-  }
-
   /* El servidor es la raiz RPL: forma la red y el cliente obtiene su IP */
   NETSTACK_ROUTING.root_start();
 
+  /* Puerto local 5678, acepta cualquier remitente (NULL), puerto remoto 8765.
+     udp_rx_callback se ejecuta con cada baliza recibida. */
   simple_udp_register(&udp_conn, UDP_PORT_SERVER, NULL,
                       UDP_PORT_CLIENT, udp_rx_callback);
 
-  printf("RSSI server listo. Config: RSSI_ref=%d dBm @ %u cm, n=%d/10, ventana=%u\n",
-         RSSI_REF_DBM, D_REF_CM, PATH_LOSS_N_X10, WINDOW_SIZE);
-  //printf("# RAW,seq,rssi_dBm\n");
+  /* Los float se imprimen con print_x100 (el printf no soporta %f) */
+  printf("RSSI server listo. Config: RSSI_ref=");
+  print_x100((int32_t)(RSSI_REF_DBM * 100.0f + (RSSI_REF_DBM < 0 ? -0.5f : 0.5f)));
+  printf(" dBm @ %u cm, n=", D_REF_CM);
+  print_x100((int32_t)(PATH_LOSS_N * 100.0f + 0.5f));
+  printf(", ventana=%u\n", WINDOW_SIZE);
+#if PRINT_RAW
+  printf("# RAW,seq,rssi_dBm\n");
+#endif
   printf("# DIST,ventana,rssi_medio_dBm,std_dB,dist_m,recibidos,perdidos\n");
 
+  /* Todo el trabajo lo hace el callback: el proceso solo espera */
   while(1) {
     PROCESS_YIELD();
   }
