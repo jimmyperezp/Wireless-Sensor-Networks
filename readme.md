@@ -159,7 +159,7 @@ Useful links:
 | Name | GitHub |
 |---|---|
 | **Jaime Pérez Pérez** | [@jimmyperezp](https://github.com/jimmyperezp) |
-| **Adrián Riveiro Varela** | <!-- TODO: add Adrián's GitHub username --> *Pending* |
+| **Adrián Riveiro Varela** | [@adrianrv](https://github.com/Adrv5005)  |
 
 <br><br>
 
