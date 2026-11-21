@@ -147,10 +147,12 @@ read_rssi(void)
   return rssi;
 }
 
+#if PRINT_RAW
 /* LQI (Link Quality Indicator) del ultimo paquete recibido: indica la
    calidad con la que ha llegado la senal (mayor = mejor). Solo se registra
    en las lineas RAW para analizarlo; no interviene en el calculo de la
-   distancia. */
+   distancia. Por eso solo se compila si PRINT_RAW = 1 (si no, el
+   compilador avisa de que no se usa y el build falla). */
 static uint16_t
 read_lqi(void)
 {
@@ -165,6 +167,7 @@ read_lqi(void)
   }
   return lqi;
 }
+#endif /* PRINT_RAW */
 /*---------------------------------------------------------------------------*/
 /* Se llama cuando la ventana tiene WINDOW_SIZE muestras: calcula la media,
    la desviacion tipica y la distancia, las imprime y reinicia la ventana. */
@@ -207,7 +210,9 @@ udp_rx_callback(struct simple_udp_connection *c,
 {
   beacon_msg_t msg;
   int16_t rssi;
+#if PRINT_RAW
   uint16_t lqi;
+#endif
 
   if(datalen < sizeof(msg)) {
     return;
@@ -218,7 +223,9 @@ udp_rx_callback(struct simple_udp_connection *c,
   }
 
   rssi = read_rssi();   /* leer cuanto antes (el packetbuf se sobrescribe) */
+#if PRINT_RAW
   lqi  = read_lqi();
+#endif
 
   if(!client_discovered) {
     client_discovered = 1;
