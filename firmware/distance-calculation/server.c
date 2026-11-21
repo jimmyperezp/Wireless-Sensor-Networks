@@ -7,7 +7,7 @@
  *      d = D_REF * 10^((RSSI_REF - RSSI_medio) / (10 * n))
  *
  * Salida por el puerto serie (formato CSV, facil de procesar):
- *   RAW,<seq>,<rssi_dBm>                        -> cada paquete (si PRINT_RAW = 1)
+ *   RAW,<seq>,<rssi_dBm>,<lqi>                  -> cada paquete (si PRINT_RAW = 1)
  *   DIST,<ventana>,<rssi_medio>,<std>,<dist_m>,<recibidos>,<perdidos>
  *
  * NOTA: el servidor NO responde al cliente.
@@ -146,6 +146,25 @@ read_rssi(void)
   }
   return rssi;
 }
+
+/* LQI (Link Quality Indicator) del ultimo paquete recibido: indica la
+   calidad con la que ha llegado la senal (mayor = mejor). Solo se registra
+   en las lineas RAW para analizarlo; no interviene en el calculo de la
+   distancia. */
+static uint16_t
+read_lqi(void)
+{
+  uint16_t lqi = packetbuf_attr(PACKETBUF_ATTR_LINK_QUALITY);
+
+  if(lqi == 0) {
+    /* Alternativa si el driver no rellena el atributo */
+    radio_value_t v;
+    if(NETSTACK_RADIO.get_value(RADIO_PARAM_LAST_LINK_QUALITY, &v) == RADIO_RESULT_OK) {
+      lqi = (uint16_t)v;
+    }
+  }
+  return lqi;
+}
 /*---------------------------------------------------------------------------*/
 /* Se llama cuando la ventana tiene WINDOW_SIZE muestras: calcula la media,
    la desviacion tipica y la distancia, las imprime y reinicia la ventana. */
@@ -188,6 +207,7 @@ udp_rx_callback(struct simple_udp_connection *c,
 {
   beacon_msg_t msg;
   int16_t rssi;
+  uint16_t lqi;
 
   if(datalen < sizeof(msg)) {
     return;
@@ -197,7 +217,8 @@ udp_rx_callback(struct simple_udp_connection *c,
     return;
   }
 
-  rssi = read_rssi();   /* leer cuanto antes */
+  rssi = read_rssi();   /* leer cuanto antes (el packetbuf se sobrescribe) */
+  lqi  = read_lqi();
 
   if(!client_discovered) {
     client_discovered = 1;
@@ -214,7 +235,7 @@ udp_rx_callback(struct simple_udp_connection *c,
   have_last_seq = 1;
 
 #if PRINT_RAW
-  printf("RAW,%u,%d\n", msg.seq, rssi);
+  printf("RAW,%u,%d,%u\n", msg.seq, rssi, lqi);
 #endif
 
   sum_rssi    += rssi;
@@ -245,7 +266,7 @@ PROCESS_THREAD(rssi_server_process, ev, data)
   print_x100((int32_t)(PATH_LOSS_N * 100.0f + 0.5f));
   printf(", ventana=%u\n", WINDOW_SIZE);
 #if PRINT_RAW
-  printf("# RAW,seq,rssi_dBm\n");
+  printf("# RAW,seq,rssi_dBm,lqi\n");
 #endif
   printf("# DIST,ventana,rssi_medio_dBm,std_dB,dist_m,recibidos,perdidos\n");
 
