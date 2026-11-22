@@ -40,7 +40,7 @@ Requiere: numpy y matplotlib  (pip install numpy matplotlib)
 """
 
 # ========================= CONFIGURACION =========================
-CARPETA_DATOS       = "datos"        # donde estan los CSV de rssi_logger.py
+CARPETA_DATOS       = "logs_csv"        # donde estan los CSV de rssi_logger.py
 CARPETA_RESULTADOS  = "resultados"   # donde se guardan tablas y graficas
 WINDOW_SIZE         = 50             # muestras por estimacion (igual que en server.c)
 

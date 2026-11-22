@@ -1,0 +1,21 @@
+estimador,calibracion,distancias_evaluadas,MAE_m,RMSE_m,error_relativo_medio_pct,error_relativo_mediana_pct,error_relativo_p90_pct
+media,firmware,0.5 1 1.5 3,1.179,1.413,75.8,68.5,94.7
+media,2 puntos,0.5 1.5,3.96,5.359,713.4,74.9,1945.7
+media,MC validacion,0.5 1 1.5 3,5.317,7.419,650.7,77.5,1613.4
+media,tabla validacion,1 1.5,0.786,0.839,60.1,50.0,73.7
+mediana,firmware,0.5 1 1.5 3,1.174,1.411,75.0,68.4,84.5
+mediana,2 puntos,0.5 1.5,3.798,5.145,683.1,73.7,2091.1
+mediana,MC validacion,0.5 1 1.5 3,5.514,7.829,662.6,79.7,1398.6
+mediana,tabla validacion,1 1.5,0.784,0.839,60.0,50.0,73.7
+media recortada,firmware,0.5 1 1.5 3,1.178,1.413,75.4,68.4,85.7
+media recortada,2 puntos,0.5 1.5,3.918,5.293,704.7,74.5,1954.9
+media recortada,MC validacion,0.5 1 1.5 3,5.377,7.525,654.2,78.0,1556.3
+media recortada,tabla validacion,1 1.5,0.795,0.852,60.7,50.0,74.5
+Kalman,firmware,0.5 1 1.5 3,1.174,1.406,75.4,68.4,84.5
+Kalman,2 puntos,0.5 1.5,3.695,4.997,662.9,69.4,1771.0
+Kalman,MC validacion,0.5 1 1.5 3,5.669,8.169,672.6,79.4,1661.2
+Kalman,tabla validacion,1 1.5,0.731,0.786,56.5,50.0,69.4
+filtro LQI,firmware,0.5 1 1.5 3,1.178,1.412,75.7,68.5,91.5
+filtro LQI,2 puntos,0.5 1.5,3.939,5.323,707.9,73.8,1938.5
+filtro LQI,MC validacion,0.5 1 1.5 3,5.381,7.54,655.3,77.6,1591.3
+filtro LQI,tabla validacion,1 1.5,0.776,0.83,59.4,50.0,73.4

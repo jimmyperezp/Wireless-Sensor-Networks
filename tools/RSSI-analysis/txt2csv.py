@@ -20,8 +20,8 @@ Despues ejecuta rssi_analysis.py como siempre.
 """
 
 # ========================= CONFIGURACION =========================
-CARPETA_TXT    = "logs_txt"   # carpeta (junto a este script) con los .txt copiados de la VM
-CARPETA_DATOS  = "datos"      # carpeta donde se escriben los CSV (la que lee rssi_analysis.py)
+CARPETA_TXT    = "logs_txt/22112026_ext"   # carpeta (junto a este script) con los .txt copiados de la VM
+CARPETA_DATOS  = "logs_CSV/22112026_ext"      # carpeta donde se escriben los CSV (la que lee rssi_analysis.py)
 # =================================================================
 
 import csv
