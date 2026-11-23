@@ -21,7 +21,7 @@ Despues ejecuta rssi_analysis.py como siempre.
 
 # ========================= CONFIGURACION =========================
 CARPETA_TXT    = "logs_txt/22112026_ext"   # carpeta (junto a este script) con los .txt copiados de la VM
-CARPETA_DATOS  = "logs_CSV/22112026_ext"      # carpeta donde se escriben los CSV (la que lee rssi_analysis.py)
+CARPETA_DATOS  = "logs_csv/22112026_ext"      # carpeta donde se escriben los CSV (la que lee rssi_analysis.py)
 # =================================================================
 
 import csv
@@ -33,6 +33,34 @@ import sys
 BASE = os.path.dirname(os.path.abspath(__file__))
 PATRON_DIST = re.compile(r"^\s*(\d+(?:[.,]\d+)?)\s*m", re.IGNORECASE)
 PATRON_RAW = re.compile(r"RAW,(\d+),(-?\d+)(?:,(\d+))?")
+
+
+def leer_texto(ruta):
+    """Lee el fichero sea cual sea su codificacion (UTF-8, UTF-16, Latin-1...).
+       Los editores a veces muestran 'simbolos raros' porque adivinan mal la
+       codificacion; aqui se detecta a partir de los bytes del fichero.
+       Devuelve (texto limpio, nombre de la codificacion usada)."""
+    with open(ruta, "rb") as f:
+        datos = f.read()
+
+    if datos.startswith(b"\xff\xfe") or datos.startswith(b"\xfe\xff"):
+        cod = "utf-16"
+    elif datos.count(b"\x00") > len(datos) // 4:
+        # Muchos bytes nulos: UTF-16 sin marca. Si estan en posiciones impares es little-endian.
+        cod = "utf-16-le" if datos[1::2].count(b"\x00") > datos[0::2].count(b"\x00") else "utf-16-be"
+    elif datos.startswith(b"\xef\xbb\xbf"):
+        cod = "utf-8-sig"
+    else:
+        try:
+            datos.decode("utf-8")
+            cod = "utf-8"
+        except UnicodeDecodeError:
+            cod = "latin-1"
+
+    texto = datos.decode(cod, errors="ignore")
+    # Quita caracteres de control y basura (se conservan los saltos de linea)
+    texto = "".join(c for c in texto if c in "\r\n\t" or (32 <= ord(c) < 127))
+    return texto, cod
 
 
 def main():
@@ -54,13 +82,13 @@ def main():
             continue
         distancia = float(m.group(1).replace(",", "."))
 
+        texto, codificacion = leer_texto(ruta)
         filas = []
-        with open(ruta, encoding="utf-8", errors="ignore") as f:
-            for linea in f:
-                r = PATRON_RAW.search(linea)
-                if r:
-                    seq, rssi, lqi = r.group(1), r.group(2), r.group(3) or ""
-                    filas.append([distancia, int(seq), int(rssi), lqi, ""])
+        for linea in texto.splitlines():
+            r = PATRON_RAW.search(linea)
+            if r:
+                seq, rssi, lqi = r.group(1), r.group(2), r.group(3) or ""
+                filas.append([distancia, int(seq), int(rssi), lqi, ""])
 
         if not filas:
             print(f"  SALTADO {nombre}: no contiene lineas RAW (¿PRINT_RAW = 1 en el servidor?)")
@@ -73,7 +101,7 @@ def main():
             w.writerow(["distancia_m", "seq", "rssi_dbm", "lqi", "t_s"])
             w.writerows(filas)
         con_lqi = "con LQI" if filas[0][3] != "" else "sin LQI"
-        print(f"  {nombre:30s} -> {len(filas):5d} muestras a {distancia:g} m ({con_lqi})")
+        print(f"  {nombre:30s} -> {len(filas):5d} muestras a {distancia:g} m ({con_lqi}, codificacion {codificacion})")
 
     print(f"\nCSV guardados en {carpeta_datos}. Ahora ejecuta rssi_analysis.py")
 
